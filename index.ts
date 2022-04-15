@@ -73,7 +73,7 @@ function average(array:number[] = []) {
 }
 
 // replace with food when ready
-const FOOD_CHANNEL = 'general';
+const FOOD_CHANNEL = 'food';
 
 let db:Record<string, number[]> = {};
 
