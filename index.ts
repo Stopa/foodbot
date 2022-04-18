@@ -72,6 +72,12 @@ function average(array:number[] = []) {
   return sum / array.length;
 }
 
+type Leaderboard = [string, number][];
+
+function makeLeaderboard(): Leaderboard {
+  return Object.entries(db).map(([uid,nums]) => [uid, average(nums)] as Leaderboard[number]).sort((a,b) => b[1] - a[1]).slice(0,5)
+}
+
 // replace with food when ready
 const FOOD_CHANNEL = 'food';
 
@@ -92,7 +98,7 @@ client.on('ready',() => {
 // display leaderboard on request
 client.on('messageCreate', (message) => {
   if (message.content === 'leaderboard') {
-    const leaderboard = Object.entries(db).map(([uid,nums]) => [uid, average(nums)] as const).sort((a,b) => b[1] - a[1]).slice(0,5);
+    const leaderboard = makeLeaderboard();
     message.channel.send(`Foodie leaderboard:\n${leaderboard.map(([uid,avg], index) => `${numberToEmoji(index+1)}: ${client.users.cache.get(uid)?.username} ${avg.toFixed(1)}`).join('\n')}`);
   }
 });
@@ -100,17 +106,31 @@ client.on('messageCreate', (message) => {
 client.on('messageReactionAdd', (message,user) => {
   const num = emojiToNumber(message.emoji.name as string);
   if (message.message.author && message.message.attachments.size > 0 && num !== null && message.message.channel.type === 'GUILD_TEXT' && message.message.channel.name === FOOD_CHANNEL) {
-    const averageBefore = average(db[message.message.author.id]);
+    const leaderboardBefore = makeLeaderboard();
+    const indexOnLeaderboard = leaderboardBefore.findIndex(([uid]) => uid === message.message.author?.id);
+    const averageBefore = indexOnLeaderboard === -1 ? 0 : leaderboardBefore[indexOnLeaderboard][1];
     Object.assign(db, {
       [message.message.author.id]: [...(db[message.message.author.id] || []), num]
     });
     const averageNow = average(db[message.message.author.id]);
     const better = averageNow > averageBefore;
-    let msg = `Your average food grade is now ${averageNow}`;
+    let msg = `${message.message.author.username}, your average food grade is now ${averageNow.toFixed(1)}`;
     if (!isNaN(averageBefore)) {
-      msg += `; ${better ? 'up' : 'down'} from ${averageBefore}.`
+      msg += `; ${better ? 'up' : 'down'} from ${averageBefore.toFixed(1)}.`
     }
     message.message.channel.send(msg);
+
+    const previousRival = leaderboardBefore[indexOnLeaderboard-1];
+    const previousRunnerup = leaderboardBefore[indexOnLeaderboard+1];
+    console.log(averageNow)
+    console.log(indexOnLeaderboard);
+    console.log(previousRival);
+    console.log(previousRunnerup);
+    if (previousRival && averageNow > previousRival[1]) {
+      message.message.channel.send(`${message.message.author.username} has surpassed ${client.users.cache.get(previousRival[0])?.username} (${previousRival[1].toFixed(1)}) on the leaderboard! 📈📈📈`);
+    } else if (previousRunnerup && averageNow < previousRunnerup[1]) {
+      message.message.channel.send(`${message.message.author.username} has fallen behind ${client.users.cache.get(previousRunnerup[0])?.username} (${previousRunnerup[1].toFixed(1)}) on the leaderboard. 📉📉📉`);
+    }
     fs.writeFile('./db.json', JSON.stringify(db), (err) => {
       if (err) {
         console.error(err);
