@@ -122,10 +122,6 @@ client.on('messageReactionAdd', (message,user) => {
 
     const previousRival = leaderboardBefore[indexOnLeaderboard-1];
     const previousRunnerup = leaderboardBefore[indexOnLeaderboard+1];
-    console.log(averageNow)
-    console.log(indexOnLeaderboard);
-    console.log(previousRival);
-    console.log(previousRunnerup);
     if (previousRival && averageNow > previousRival[1]) {
       message.message.channel.send(`${message.message.author.username} has surpassed ${client.users.cache.get(previousRival[0])?.username} (${previousRival[1].toFixed(1)}) on the leaderboard! 📈📈📈`);
     } else if (previousRunnerup && averageNow < previousRunnerup[1]) {
