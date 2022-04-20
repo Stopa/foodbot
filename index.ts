@@ -108,7 +108,7 @@ client.on('messageReactionAdd', (message,user) => {
   if (message.message.author && message.message.attachments.size > 0 && num !== null && message.message.channel.type === 'GUILD_TEXT' && message.message.channel.name === FOOD_CHANNEL) {
     const leaderboardBefore = makeLeaderboard();
     const indexOnLeaderboard = leaderboardBefore.findIndex(([uid]) => uid === message.message.author?.id);
-    const averageBefore = indexOnLeaderboard === -1 ? 0 : leaderboardBefore[indexOnLeaderboard][1];
+    const averageBefore = average(db[message.message.author.id]);
     Object.assign(db, {
       [message.message.author.id]: [...(db[message.message.author.id] || []), num]
     });
@@ -120,8 +120,8 @@ client.on('messageReactionAdd', (message,user) => {
     }
     message.message.channel.send(msg);
 
-    const previousRival = leaderboardBefore[indexOnLeaderboard-1];
-    const previousRunnerup = leaderboardBefore[indexOnLeaderboard+1];
+    const previousRival = indexOnLeaderboard === -1 ? leaderboardBefore[leaderboardBefore.length - 1] : leaderboardBefore[indexOnLeaderboard - 1];
+    const previousRunnerup = indexOnLeaderboard === -1 ? null : leaderboardBefore[indexOnLeaderboard + 1];
     if (previousRival && averageNow > previousRival[1]) {
       message.message.channel.send(`${message.message.author.username} has surpassed ${client.users.cache.get(previousRival[0])?.username} (${previousRival[1].toFixed(1)}) on the leaderboard! 📈📈📈`);
     } else if (previousRunnerup && averageNow < previousRunnerup[1]) {
