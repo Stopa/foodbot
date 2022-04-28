@@ -78,6 +78,17 @@ function makeLeaderboard(): Leaderboard {
   return Object.entries(db).map(([uid,nums]) => [uid, average(nums)] as Leaderboard[number]).sort((a,b) => b[1] - a[1]).slice(0,5)
 }
 
+async function userName(userId: string) {
+  let name: string;
+  try {
+    const user = await client.users.fetch(userId);
+    name = user.username;
+  } catch(e) {
+    name = 'Unknown foodie';
+  }
+  return name;
+}
+
 // replace with food when ready
 const FOOD_CHANNEL = 'food';
 
@@ -96,10 +107,14 @@ client.on('ready',() => {
 });
 
 // display leaderboard on request
-client.on('messageCreate', (message) => {
+client.on('messageCreate', async (message) => {
   if (message.content === 'leaderboard') {
     const leaderboard = makeLeaderboard();
-    message.channel.send(`Foodie leaderboard:\n${leaderboard.map(([uid,avg], index) => `${numberToEmoji(index+1)}: ${client.users.cache.get(uid)?.username} ${avg.toFixed(1)}`).join('\n')}`);
+    const leaderboardText = await Promise.all(leaderboard.map(async ([uid,avg], index) => {
+      const name = await userName(uid);
+      return `${numberToEmoji(index+1)}: ${name} ${avg.toFixed(1)}`
+    }));
+    message.channel.send(`Foodie leaderboard:\n${leaderboardText.join('\n')}`);
   }
 });
 
