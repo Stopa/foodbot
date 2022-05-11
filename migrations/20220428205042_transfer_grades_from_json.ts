@@ -18,22 +18,22 @@ export async function up(knex: Knex): Promise<void> {
     return;
   }
 
-  return knex.transaction(async (trx) => {
-    await trx.schema.alterTable("grades", async (table) => {
-      await table.dropColumn("id");
-      table.increments("id").primary();
-      table.setNullable("guild_id");
-      table.setNullable("channel_id");
-      table.setNullable("message_id");
-    });
-    await trx("grades").insert(
-      data.map(([foodieId, grades]) => ({
-        critic_id: process.env.CZAR,
-        chef_id: foodieId,
-        grade: Math.round(average(grades)),
-      }))
-    );
+  await knex.schema.alterTable("grades", (table) => {
+    table.dropColumn("id");
   });
+  await knex.schema.alterTable("grades", (table) => {
+    table.increments("id").primary();
+    table.setNullable("guild_id");
+    table.setNullable("channel_id");
+    table.setNullable("message_id");
+  });
+  await knex("grades").insert(
+    data.map(([foodieId, grades]) => ({
+      critic_id: process.env.CZAR,
+      chef_id: foodieId,
+      grade: Math.round(average(grades)),
+    }))
+  );
 }
 
 export async function down(knex: Knex): Promise<void> {
