@@ -28,11 +28,27 @@ const client = new DiscordJS.Client({
 type Leaderboard = [string, number][];
 
 /**
+ * If czar id is set in env, adds it as critic_id to given filter object
+ */
+function withCzar(where: Record<string, any>) {
+  if (process.env.CZAR) {
+    return { ...where, critic_id: process.env.CZAR };
+  }
+
+  return where;
+}
+
+/**
  * People ordered by their average score
  */
 async function makeLeaderboard(): Promise<Leaderboard> {
+  const where: Record<string, any> = withCzar({
+    removed: false,
+  });
+
   const q = await k("grades")
     .select("chef_id")
+    .where(where)
     .avg("grade as average")
     .groupBy("chef_id")
     .orderBy("average", "desc");
@@ -57,7 +73,11 @@ async function userName(userId: string) {
  * Get all grades given to the user with given id
  */
 async function getGradesForChef(id: string): Promise<number[]> {
-  const q = await k.select("grade").from("grades").where("chef_id", id);
+  const where: Record<string, any> = withCzar({
+    chef_id: id,
+    removed: false,
+  });
+  const q = await k.select("grade").from("grades").where(where);
   return q.map(({ grade }) => grade);
 }
 
@@ -74,7 +94,7 @@ client.on("messageCreate", async (message) => {
     isFoodChannel(message.channel) &&
     message.content.toLowerCase() === "leaderboard"
   ) {
-    const leaderboard = await makeLeaderboard();
+    const leaderboard = (await makeLeaderboard()).slice(0, 5);
     const leaderboardText = await Promise.all(
       leaderboard.map(async ([uid, avg], index) => {
         const name = await userName(uid);
@@ -85,6 +105,7 @@ client.on("messageCreate", async (message) => {
   }
 });
 
+// record grade in db, announce average and leaderboard position change
 client.on("messageReactionAdd", async (reaction, user) => {
   if (reaction.partial) {
     await reaction.fetch();
@@ -105,7 +126,6 @@ client.on("messageReactionAdd", async (reaction, user) => {
     const grades = await getGradesForChef(id);
     const averageBefore = leaderboardBefore[indexOnLeaderboard][1];
     const averageNow = average([...grades, num]);
-
     // save to db
     await k("grades").insert({
       critic_id: user.id,
@@ -115,6 +135,11 @@ client.on("messageReactionAdd", async (reaction, user) => {
       message_id: reaction.message.id,
       grade: num,
     });
+
+    // if some rando is giving grades, record them, but don't announce anything
+    if (process.env.CZAR && user.id !== process.env.CZAR) {
+      return;
+    }
 
     // announce new average and improvement
     const hasAverageImproved = averageNow > averageBefore;
@@ -150,6 +175,29 @@ client.on("messageReactionAdd", async (reaction, user) => {
         `${username} has fallen behind ${runnerupName} (${runnerupScore}) on the leaderboard. 📉📉📉`
       );
     }
+  }
+});
+
+// soft-remove grade in DB if one existed for the given message
+client.on("messageReactionRemove", async (reaction, user) => {
+  const num = emojiToNumber(reaction.emoji.name);
+  if (reaction.partial) {
+    await reaction.fetch();
+  }
+
+  const q = await k("grades").where({
+    critic_id: user.id,
+    message_id: reaction.message.id,
+  });
+
+  if (q.length > 0) {
+    await k("grades")
+      .where({
+        critic_id: user.id,
+        message_id: reaction.message.id,
+        grade: num,
+      })
+      .update("removed", true);
   }
 });
 
