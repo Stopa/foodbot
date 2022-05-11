@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node --transpileOnly index.ts"
+    "build": "tsc index.ts --outDir out/",
+    "start": "node out/index.js",
+    "dev": "ts-node --transpileOnly index.ts",
+    "migrate": "knex migrate:latest"
   },
   "author": "",
   "license": "ISC",
@@ -13,7 +16,11 @@
     "dotenv": "^16.0.0",
     "knex": "^2.0.0",
     "mysql": "^2.18.1",
+    "prettier": "^2.6.2",
     "ts-node": "^10.7.0",
     "typescript": "^4.6.3"
+  },
+  "engines": {
+    "node": "16"
   }
 }

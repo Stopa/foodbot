@@ -6,7 +6,7 @@ Simple discord bot that tallies up the number-reactions on messages with attachm
 
 1. Make a `.env` file based on `example.env` and supply your Discord api token.
 2. and then you
-3. 
+3.
 
 # Then you what
 
