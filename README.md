@@ -30,9 +30,17 @@ Simple discord bot that tallies up the number-reactions on messages with attachm
 
 6. then you
 
-# Then you what
+## Then you what
 
 then you
 
 <img width="383" alt="image" src="https://user-images.githubusercontent.com/408256/163557895-51bf2e18-c9a6-45b5-9725-d20f0465a84f.png">
 <img width="266" alt="image" src="https://user-images.githubusercontent.com/408256/163557919-6599c8b3-50e9-45d8-9e89-ddf92a0fa1ce.png">
+
+# Versioning
+
+[Semantic versioning](https://semver.org) makes perfect sense when you're building something with an API that needs to be consumed by other software projects.
+For user-facing stuff, like this bot, not so much. (Feel free to @ me about this)
+
+THUSLY, Foodbot will get major version upgrades whenever I decide it's a big upgrade and minor versions when it's changed but "not so much".
+Also each major version will get a codename, because it's more fun that way.
